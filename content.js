@@ -6,10 +6,22 @@ let connectingInterval = null;
 function findConnectButtons() {
   // Get all span elements with the specific button text "Connect"
   const allSpans = Array.from(document.querySelectorAll('span'));
-  return allSpans.filter(span => span.textContent.trim() === 'Connect');
+  
+  if (!allSpans || allSpans.length === 0) {
+    console.log("No spans found.");
+    return [];
+  }
+
+  const connectButtons = allSpans.filter(span => span.textContent.trim() === 'Connect');
+  
+  if (connectButtons.length === 0) {
+    console.log("No 'Connect' buttons found within spans.");
+  }
+  
+  return connectButtons;
 }
 
-function simulateClick(button) {
+function simulateClick(button, index, total) {
   if (button.offsetWidth > 0 && button.offsetHeight > 0 && !button.disabled) {
     // Create a mouse event
     const clickEvent = new MouseEvent('click', {
@@ -20,9 +32,9 @@ function simulateClick(button) {
 
     // Dispatch the click event
     button.dispatchEvent(clickEvent);
-    console.log(`Simulated click on connect button ${index + 1} of ${connectButtons.length}`);
+    console.log(`Simulated click on connect button ${index} of ${total}`);
   } else {
-    console.log(`Button ${index + 1} not visible or disabled, skipping.`);
+    console.log(`Button ${index} not visible or disabled, skipping.`);
   }
 }
 
@@ -58,11 +70,11 @@ function processButtons(buttons) {
     }
 
     const button = buttons[index];
-    simulateClick(button);
+    simulateClick(button, index + 1, buttons.length);
     index++;
     
     // Schedule the next button click after a slight delay
-    setTimeout(clickNextButton, 100); // Small delay to allow the page to respond
+    setTimeout(clickNextButton, 5000); // Small delay to allow the page to respond
   }
 
   clickNextButton();
@@ -75,7 +87,14 @@ function startConnecting(delay) {
   const targetNode = document.body; // Start observing from the body
   observeDOM(targetNode);
 
-  setTimeout(processButtons, delay); // Initial processing after the initial delay
+  setTimeout(() => {
+    const buttons = findConnectButtons();
+    if (buttons && buttons.length > 0) {
+      processButtons(buttons);
+    } else {
+      console.log("No buttons to process after initial delay.");
+    }
+  }, delay); // Initial processing after the initial delay
 }
 
 function stopConnecting() {
