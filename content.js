@@ -130,7 +130,7 @@ window.addEventListener('message', (event) => {
   if (event.data.type === 'START_FOLLOWING') {
     const delay = event.data.delay || 5000;
     const count = Math.min(Number(event.data.count) || 30, 30);
-    startConnecting(delay, count);
+    startConnecting(delay, count+1);
   } else if (event.data.type === 'STOP_FOLLOWING') {
     stopConnecting();
   }
