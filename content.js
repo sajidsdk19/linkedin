@@ -69,7 +69,7 @@ function observeDOM(targetNode) {
 let connectionDelay = 5000; // Default delay if not specified
 
 function processButtons(buttons) {
-  let index = 0;
+  let index = 1;
   function clickNextButton() {
     if (sentCount >= totalToSend || index >= buttons.length) {
       console.log("Finished batch.");
@@ -130,7 +130,7 @@ window.addEventListener('message', (event) => {
   if (event.data.type === 'START_FOLLOWING') {
     const delay = event.data.delay || 5000;
     const count = Math.min(Number(event.data.count) || 30, 30);
-    startConnecting(delay, count+1);
+    startConnecting(delay, count);
   } else if (event.data.type === 'STOP_FOLLOWING') {
     stopConnecting();
   }
