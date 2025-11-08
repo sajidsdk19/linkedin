@@ -4,92 +4,82 @@ let isConnecting = false;
 let connectingInterval = null;
 
 function findConnectButtons() {
-  // Get all buttons on the page
-  const allButtons = Array.from(document.querySelectorAll('button'));
+  // Get all span elements with the specific button text "Connect"
+  const allSpans = Array.from(document.querySelectorAll('span'));
+  const connectButtons = allSpans.filter(span => span.textContent.trim() === 'Connect');
   
-  // Filter to only buttons that contain "Connect" text or have Invite aria-label
-  const connectButtons = allButtons.filter(button => {
-    const text = (button.textContent || button.innerText || '').trim();
-    const ariaLabel = (button.getAttribute('aria-label') || '').trim();
-    
-    // Check if it's a Connect button
-    const isConnectButton = (
-      text === 'Connect' || 
-      text.startsWith('Connect') ||
-      ariaLabel.includes('Invite') || 
-      ariaLabel.includes('Connect')
-    );
-    
-    // Exclude already connected or pending buttons
-    const isNotConnected = (
-      !text.includes('Following') && 
-      !text.includes('Pending') &&
-      !text.includes('Message') &&
-      !ariaLabel.includes('Pending')
-    );
-    
-    return isConnectButton && isNotConnected && !button.disabled;
-  });
-  
-  console.log(`Found ${connectButtons.length} connect buttons from ${allButtons.length} total buttons`);
-  
-  return connectButtons;
+  return connectButtons.map(span => span.closest('.button-class')); // Adjust .button-class to match the actual class of the button
 }
 
-function startConnecting(delay) {
-  console.log("Starting to connect with delay:", delay);
-  isConnecting = true;
-
-  const connectButtons = findConnectButtons();
-  
-  if (connectButtons.length === 0) {
-    console.log("No connect buttons found on this page.");
-    alert("No Connect buttons found on this page. Make sure you're on the My Network page.");
-    return;
+function clickButton(button) {
+  if (button.offsetWidth > 0 && button.offsetHeight > 0 && !button.disabled) {
+    // Scroll button into view
+    button.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    // Click the button after a slight delay to simulate human interaction
+    setTimeout(() => {
+      try {
+        button.click();
+        console.log(`Clicked connect button ${index + 1} of ${connectButtons.length}`);
+      } catch (e) {
+        console.error(`Error clicking button ${index + 1}:`, e);
+      }
+    }, 200); // Additional delay for human-like interaction
+  } else {
+    console.log(`Button ${index + 1} not visible or disabled, skipping.`);
   }
+}
 
+function observeDOM(targetNode) {
+  const observerOptions = {
+    childList: true,
+    subtree: true
+  };
+
+  const observerCallback = (mutationsList) => {
+    for (const mutation of mutationsList) {
+      if (mutation.type === 'childList') {
+        const buttons = findConnectButtons();
+        if (buttons.length > 0) {
+          processButtons(buttons);
+        }
+      }
+    }
+  };
+
+  const observer = new MutationObserver(observerCallback);
+  observer.observe(targetNode, observerOptions);
+}
+
+function processButtons(buttons) {
   let index = 0;
-
-  connectingInterval = setInterval(() => {
-    if (index >= connectButtons.length) {
+  function clickNextButton() {
+    if (index >= buttons.length) {
       console.log("All connect buttons clicked.");
-      alert(`Finished! Sent ${index} connection requests.`);
+      alert(`Finished! Sent ${buttons.length} connection requests.`);
       stopConnecting();
       return;
     }
 
-    const button = connectButtons[index];
+    const button = buttons[index];
+    clickButton(button);
+    index++;
     
-    // Check if the button is visible and enabled
-    if (button.offsetWidth > 0 && button.offsetHeight > 0 && !button.disabled) {
-      // Scroll button into view
-      button.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      
-      setTimeout(() => {
-        try {
-          // Click the button after a slight delay to simulate human interaction
-          setTimeout(() => {
-            button.click();
-            console.log(`Clicked connect button ${index + 1} of ${connectButtons.length}`);
-          }, 200); // Additional delay for human-like interaction
-            
-          index++;
-        } catch (e) {
-          console.error(`Error clicking button ${index + 1}:`, e);
-        }
-      }, delay);
-    } else {
-      console.log(`Button ${index + 1} not visible or disabled, skipping.`);
-    }
+    // Schedule the next button click after a slight delay
+    setTimeout(clickNextButton, 100); // Small delay to allow the page to respond
+  }
 
-    // Add a small delay before processing the next button
-    setTimeout(() => {
-      connectingInterval = setInterval(() => {
-        startConnecting(delay);
-      }, 100); // Small delay to allow the page to respond
-    }, 500);
+  clickNextButton();
+}
 
-  }, delay);
+function startConnecting(delay) {
+  isConnecting = true;
+  console.log('Starting to follow with delay:', delay);
+  
+  const targetNode = document.body; // Start observing from the body
+  observeDOM(targetNode);
+
+  setTimeout(processButtons, delay); // Initial processing after the initial delay
 }
 
 function stopConnecting() {
@@ -104,7 +94,7 @@ function stopConnecting() {
 // Listen for messages from popup
 window.addEventListener('message', (event) => {
   if (event.source !== window) return;
-  
+
   if (event.data.type === 'START_FOLLOWING') {
     const delay = event.data.delay || 5000;
     startConnecting(delay);
